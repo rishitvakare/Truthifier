@@ -109,7 +109,6 @@ export async function POST(req: Request) {
     const totalLiability = issues * 120 * 12; // Annualized math
 
     // DATABASE PERSISTENCE: Save audit metadata
-    // Wrapped in a check to ensure the client exists before calling
     if (supabase) {
       await supabase.from('audits').insert([{
         audit_score: score,
