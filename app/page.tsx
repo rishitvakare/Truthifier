@@ -19,7 +19,7 @@ export default function LandingPage() {
 
     try {
       // Points to your new flattened route: app/audit/route.ts
-      const response = await fetch('/audit', {
+      const response = await fetch('/api/audit', {
         method: 'POST',
         body: formData,
       });
