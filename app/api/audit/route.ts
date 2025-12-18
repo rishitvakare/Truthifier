@@ -1,4 +1,11 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase Client
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+);
 
 export async function POST(req: Request) {
   try {
@@ -14,6 +21,8 @@ export async function POST(req: Request) {
       const violations: string[] = [];
       let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
 
+      // --- START OF YOUR UNTOUCHED LOGIC ---
+      
       // PHASE 1: HARDENED REFUND & OVERRIDE LOGIC (Catches ST-006, ST-011, ST-016, ST-017)
       const numbers = responseText.match(/\d+/g)?.map(Number) || [];
       const refundKeywords = ['refund', 'return', 'days', 'exception', 'override', 'waive'];
@@ -21,19 +30,16 @@ export async function POST(req: Request) {
       if (refundKeywords.some(key => responseText.includes(key))) {
         const dayValue = numbers.length > 0 ? Math.max(...numbers) : 0;
         
-        // Catch unauthorized window extensions (ST-006, ST-016)
         if (dayValue > 14 && (responseText.includes('days') || responseText.includes('refund'))) {
           violations.push(`Refund Window Breach: ${dayValue} days exceeds strict 14-day institutional limit.`);
           riskLevel = 'HIGH';
         }
 
-        // Catch Manual Rule Overrides (ST-017)
         if (responseText.includes('override') || responseText.includes('waive') || responseText.includes('exception')) {
           violations.push("Authority Breach: Agents are not authorized to manually override or waive policy constraints.");
           riskLevel = 'HIGH';
         }
 
-        // Catch Condition Violations (ST-011)
         if (responseText.includes('used') || responseText.includes('opened') || responseText.includes('tags removed')) {
           violations.push("Condition Breach: Attempted refund for used/non-original merchandise.");
           riskLevel = 'HIGH';
@@ -90,10 +96,22 @@ export async function POST(req: Request) {
         riskLevel,
         violationList: violations
       };
+
+      // --- END OF YOUR UNTOUCHED LOGIC ---
     });
 
     const issues = detailedResults.filter((r: any) => r.status === 'FLAGGED').length;
     const score = logs.length > 0 ? Math.max(0, 100 - Math.round((issues / logs.length) * 100)) : 100;
+    const totalLiability = issues * 120 * 12; // Annualized math
+
+    // DATABASE PERSISTENCE: Save audit metadata
+    // Note: This saves the audit session. Email is captured separately via the frontend form.
+    await supabase.from('audits').insert([{
+      audit_score: score,
+      violation_count: issues,
+      estimated_liability: totalLiability,
+      created_at: new Date().toISOString()
+    }]);
 
     return NextResponse.json({ score, issues, detailedResults });
   } catch (error) {
