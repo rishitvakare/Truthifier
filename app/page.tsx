@@ -39,27 +39,21 @@ export default function LandingPage() {
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !results) return;
-
-    // Minimalist B2B filter
-    const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
-    const domain = email.split('@')[1]?.toLowerCase();
-    if (personalDomains.includes(domain)) {
-      alert("Protocol Error: Corporate email required for roadmap access.");
-      return;
-    }
-
+  
+    // REMOVED: B2B filter logic that blocked personal domains
+  
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email,
+          email: email, // Now accepts any valid email format
           auditScore: results.score,
-          liability: results.issues * 120 * 12 // Annualized math
+          liability: results.issues * 120 * 12 
         }),
       });
-
+  
       if (response.ok) {
         alert("Verification Secured. Roadmap access sent to " + email);
         setEmail("");
