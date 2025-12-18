@@ -18,18 +18,32 @@ export default function LandingPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+  
+    // NEW VALIDATION: Check for Truth Source before proceeding
+    if (!truthSource.trim()) {
+      alert("Protocol Error: You must provide a Truth Source (Policy) before analyzing logs.");
+      // Reset the input so they can re-upload after fixing the policy
+      e.target.value = ""; 
+      return;
+    }
+  
     setLoading(true);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('truthSource', truthSource);
-
+  
     try {
       const response = await fetch('/api/audit', { method: 'POST', body: formData });
+      
+      // Check if server-side processing failed
+      if (!response.ok) {
+        throw new Error("Audit logic failure");
+      }
+  
       const data = await response.json();
       setResults(data);
     } catch (error) {
-      alert("Protocol Analysis Failed.");
+      alert("Protocol Analysis Failed. Please ensure your JSON format is correct.");
     } finally {
       setLoading(false);
     }
@@ -40,15 +54,13 @@ export default function LandingPage() {
     e.preventDefault();
     if (!email || !results) return;
   
-    // REMOVED: B2B filter logic that blocked personal domains
-  
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email, // Now accepts any valid email format
+          email: email, 
           auditScore: results.score,
           liability: results.issues * 120 * 12 
         }),
@@ -81,7 +93,6 @@ export default function LandingPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto pt-12 pb-32 px-6">
-        {/* REVENUE PROTECTION HOOK */}
         {!results && (
           <section id="mission" className="mb-24 text-center animate-in fade-in duration-1000">
             <div className="inline-block px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/5 text-emerald-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-6">
@@ -113,22 +124,31 @@ export default function LandingPage() {
 
                   <div>
                     <label className="text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-500 mb-4 block underline decoration-emerald-500/20 underline-offset-4">02 // DATASET UPLOAD</label>
-                    <div className="bg-black border border-white/10 border-dashed rounded-2xl p-16 text-center hover:border-emerald-500/40 transition cursor-pointer group">
-                      <input type="file" className="hidden" id="log-upload" onChange={handleUpload} accept=".json" />
-                      <label htmlFor="log-upload" className="cursor-pointer">
+                    
+                    {/* IMPLEMENTED VALIDATION UI START */}
+                    <div className={`bg-black border border-white/10 border-dashed rounded-2xl p-16 text-center transition ${!truthSource.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:border-emerald-500/40 cursor-pointer group'}`}>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        id="log-upload" 
+                        onChange={handleUpload} 
+                        accept=".json"
+                        disabled={!truthSource.trim()}
+                      />
+                      <label htmlFor="log-upload" className={!truthSource.trim() ? "cursor-not-allowed" : "cursor-pointer"}>
                         {loading ? <Loader2 className="animate-spin mx-auto text-emerald-500" size={40} /> : (
-                          <div className="bg-emerald-600 hover:bg-emerald-500 text-black px-12 py-4 rounded-full font-black text-xs uppercase tracking-widest inline-flex items-center gap-2 transition transform group-hover:scale-105">
-                            Analyze Dataset <ChevronRight size={16} />
+                          <div className={`${!truthSource.trim() ? 'bg-slate-800' : 'bg-emerald-600 hover:bg-emerald-500'} text-black px-12 py-4 rounded-full font-black text-xs uppercase tracking-widest inline-flex items-center gap-2 transition transform group-hover:scale-105`}>
+                            {!truthSource.trim() ? "Enter Policy First" : "Analyze Dataset"} <ChevronRight size={16} />
                           </div>
                         )}
                       </label>
                     </div>
+                    {/* IMPLEMENTED VALIDATION UI END */}
+                    
                   </div>
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  
-                  {/* MINIMALISTIC FORENSIC TILES */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
                     <div className="bg-black border border-white/5 p-5 rounded-xl">
                       <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Liability Exposure // <span className="italic font-normal">Annual Est.</span></p>
@@ -142,8 +162,7 @@ export default function LandingPage() {
                     <div className="bg-black border border-white/5 p-5 rounded-xl">
                       <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Institutional Drift</p>
                       <div className="flex items-baseline gap-1 text-white">
-                        <span className="text-2xl font-black italic tracking-tighter">{Math.round((results.issues / results.detailedResults.length) * 100)}</span>
-                        <span className="text-emerald-500 text-sm font-bold">%</span>
+                        <span className="text-2xl font-black italic tracking-tighter">{Math.round((results.issues / results.detailedResults.length) * 100)}%</span>
                       </div>
                     </div>
 
@@ -156,7 +175,6 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  {/* MINIMALIST ROADMAP REQUESTER */}
                   {results.score < 100 && (
                     <div className="mb-12 p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
                       <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-[0.2em] mb-4">03 // Institutional Mitigation Roadmap</p>
