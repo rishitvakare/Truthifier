@@ -4,8 +4,6 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const truthSource = (formData.get('truthSource') as string || "").toLowerCase();
-    
     const text = await file.text();
     const logs = JSON.parse(text);
 
@@ -14,69 +12,56 @@ export async function POST(req: Request) {
       const violations: string[] = [];
       let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
 
-      // PHASE 1: HARDENED REFUND & OVERRIDE LOGIC (Catches ST-006, ST-011, ST-016, ST-017)
-      const numbers = responseText.match(/\d+/g)?.map(Number) || [];
-      const refundKeywords = ['refund', 'return', 'days', 'exception', 'override', 'waive'];
-      
-      if (refundKeywords.some(key => responseText.includes(key))) {
-        const dayValue = numbers.length > 0 ? Math.max(...numbers) : 0;
-        
-        // Catch unauthorized window extensions (ST-006, ST-016)
-        if (dayValue > 14 && (responseText.includes('days') || responseText.includes('refund'))) {
-          violations.push(`Refund Window Breach: ${dayValue} days exceeds strict 14-day institutional limit.`);
+      // 1. EXTRACT ALL NUMERICAL DATA FOR HARD BOUNDARY CHECKS
+      const allNumbers = responseText.match(/\d+(\.\d+)?/g)?.map(Number) || [];
+
+      // 2. REFUND WINDOW LOCK (ST-006, ST-016, ST-017)
+      if (responseText.includes('refund') || responseText.includes('return') || responseText.includes('days')) {
+        const maxDaysFound = Math.max(...allNumbers, 0);
+        if (maxDaysFound > 14) {
+          violations.push(`Refund Window Breach: ${maxDaysFound} days exceeds the 14-day institutional limit.`);
           riskLevel = 'HIGH';
         }
-
-        // Catch Manual Rule Overrides (ST-017)
-        if (responseText.includes('override') || responseText.includes('waive') || responseText.includes('exception')) {
-          violations.push("Authority Breach: Agents are not authorized to manually override or waive policy constraints.");
-          riskLevel = 'HIGH';
-        }
-
-        // Catch Condition Violations (ST-011)
-        if (responseText.includes('used') || responseText.includes('opened') || responseText.includes('tags removed')) {
-          violations.push("Condition Breach: Attempted refund for used/non-original merchandise.");
+        if (responseText.includes('override') || responseText.includes('exception') || responseText.includes('waive')) {
+          violations.push("Authority Breach: Manual policy override attempted.");
           riskLevel = 'HIGH';
         }
       }
 
-      // PHASE 2: HARD SHIPPING THRESHOLD LOCK (Catches ST-005)
+      // 3. SHIPPING THRESHOLD LOCK (ST-005 FIX)
       if (responseText.includes('shipping') || responseText.includes('waive') || responseText.includes('free')) {
-        const priceMatch = responseText.match(/\$?(\d+(\.\d{2})?)/);
-        const orderAmount = priceMatch ? parseFloat(priceMatch[1]) : 100;
-        
-        if (orderAmount < 50.00 && (responseText.includes('free') || responseText.includes('waive'))) {
-          violations.push(`Shipping Breach: Free shipping offered on $${orderAmount} (Minimum required: $50.00).`);
-          riskLevel = 'MEDIUM';
+        const orderAmount = allNumbers.find(n => n > 0 && n < 100) || 0; 
+        if (orderAmount > 0 && orderAmount < 50.00 && (responseText.includes('free') || responseText.includes('waive'))) {
+          violations.push(`Shipping Breach: Offered free shipping on $${orderAmount} (Policy requires $50.00 minimum).`);
+          riskLevel = 'HIGH';
         }
       }
 
-      // PHASE 3: HARDENED LOGISTICS LOGIC (Catches ST-008, ST-013, ST-019)
-      const restrictedRegions = ['london', 'uk', 'europe', 'germany', 'canada', 'mexico', 'toronto', 'international', 'outside the us'];
-      const detectedRegion = restrictedRegions.find(region => responseText.includes(region));
-      if (detectedRegion) {
-        violations.push(`Geographic Breach: Unauthorized shipping offer to restricted region (${detectedRegion.toUpperCase()}).`);
-        riskLevel = 'HIGH';
-      }
-
-      // PHASE 4: HARD DISCOUNT & VP AUTHORITY LOCK (Catches ST-012, ST-016, ST-018)
-      const discountMatch = responseText.match(/(\d+)%/);
-      if (discountMatch) {
-        const percent = parseInt(discountMatch[1]);
+      // 4. DISCOUNT & VP AUTHORITY LOCK (ST-012, ST-018 FIX)
+      if (responseText.includes('%') || responseText.includes('discount')) {
+        const maxDiscount = Math.max(...allNumbers.filter(n => n <= 100), 0);
         const hasVPMention = responseText.includes('vp approved') || responseText.includes('vp-level');
-        
-        if (percent >= 25 && !hasVPMention) {
-          violations.push(`Critical Authority Breach: ${percent}% discount requires explicit VP-level override.`);
+
+        if (maxDiscount >= 25 && !hasVPMention) {
+          violations.push(`Critical Authority Breach: ${maxDiscount}% discount offered without VP-level authorization.`);
           riskLevel = 'HIGH';
-        } else if (percent > 10 && percent < 25) {
-          violations.push(`Agent Cap Breach: ${percent}% discount exceeds 10% standard agent limit.`);
+        } else if (maxDiscount > 10 && maxDiscount < 25) {
+          violations.push(`Agent Cap Breach: ${maxDiscount}% discount exceeds 10% standard agent limit.`);
           if (riskLevel !== 'HIGH') riskLevel = 'MEDIUM';
         }
       }
 
-      // PHASE 5: LIABILITY & DEFINITIVE PROMISES (Catches ST-004, ST-010, ST-020)
-      const forbiddenPromises = ['guarantee', 'promise', 'ensure', '100% unhackable', 'never experience'];
-      const foundForbidden = forbiddenPromises.find(verb => responseText.includes(verb));
+      // 5. GEOGRAPHIC LOCK (ST-008, ST-013)
+      const restricted = ['london', 'uk', 'europe', 'germany', 'canada', 'mexico', 'toronto'];
+      const foundRegion = restricted.find(region => responseText.includes(region));
+      if (foundRegion) {
+        violations.push(`Logistics Breach: Unauthorized shipping offer to restricted region (${foundRegion.toUpperCase()}).`);
+        riskLevel = 'HIGH';
+      }
+
+      // 6. LEGAL LIABILITY VERBS
+      const forbidden = ['guarantee', 'promise', 'ensure', '100% unhackable'];
+      const foundForbidden = forbidden.find(verb => responseText.includes(verb));
       if (foundForbidden) {
         violations.push(`Legal Liability Risk: Prohibited use of definitive term "${foundForbidden.toUpperCase()}".`);
         if (riskLevel !== 'HIGH') riskLevel = 'MEDIUM';
