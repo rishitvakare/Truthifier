@@ -39,7 +39,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-slate-950 text-white font-sans px-6">
       <nav className="max-w-6xl mx-auto py-6 flex justify-between items-center border-b border-slate-800">
         <div className="text-xl font-bold flex items-center gap-2">
-          <ShieldCheck className="text-blue-500" /> VerifyAI
+          <ShieldCheck className="text-blue-500" /> Truthifier
         </div>
       </nav>
 
