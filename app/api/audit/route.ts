@@ -7,7 +7,7 @@ export async function POST(req: Request) {
 
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
-    // Use .text() to read the file; this avoids the 'Buffer' error on Vercel
+    // Use .text() to avoid environment-specific Buffer crashes
     const text = await file.text();
     const logs = JSON.parse(text);
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       return {
         id: log.id || Math.random().toString(36).substr(2, 5),
         status: isRisk ? 'FLAGGED' : 'CLEAN',
-        reason: isRisk ? 'Potential Hallucination detected' : 'Compliant'
+        reason: isRisk ? 'Policy risk detected' : 'Compliant'
       };
     });
 
@@ -30,7 +30,6 @@ export async function POST(req: Request) {
       detailedResults
     });
   } catch (error) {
-    // If anything fails, it triggers your frontend alert
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
   }
 }
