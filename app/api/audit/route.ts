@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase Client
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+// --- SAFE INITIALIZATION BLOCK START ---
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
+
+// Only initialize if keys are present to prevent build-time crashes
+const supabase = supabaseUrl && supabaseKey 
+  ? createClient(supabaseUrl, supabaseKey) 
+  : null;
+// --- SAFE INITIALIZATION BLOCK END ---
 
 export async function POST(req: Request) {
   try {
@@ -105,13 +109,15 @@ export async function POST(req: Request) {
     const totalLiability = issues * 120 * 12; // Annualized math
 
     // DATABASE PERSISTENCE: Save audit metadata
-    // Note: This saves the audit session. Email is captured separately via the frontend form.
-    await supabase.from('audits').insert([{
-      audit_score: score,
-      violation_count: issues,
-      estimated_liability: totalLiability,
-      created_at: new Date().toISOString()
-    }]);
+    // Wrapped in a check to ensure the client exists before calling
+    if (supabase) {
+      await supabase.from('audits').insert([{
+        audit_score: score,
+        violation_count: issues,
+        estimated_liability: totalLiability,
+        created_at: new Date().toISOString()
+      }]);
+    }
 
     return NextResponse.json({ score, issues, detailedResults });
   } catch (error) {
