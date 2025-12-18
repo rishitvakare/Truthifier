@@ -15,131 +15,100 @@ export default function LandingPage() {
     setLoading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('truthSource', truthSource); // Sending the documentation context
+    formData.append('truthSource', truthSource);
 
     try {
-      const response = await fetch('/api/audit', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch('/api/audit', { method: 'POST', body: formData });
       const data = await response.json();
       setResults(data);
     } catch (error) {
       alert("Analysis failed.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
+  };
+
+  // Helper to determine badge color based on Risk Level
+  const getRiskColor = (level?: string) => {
+    if (level === 'HIGH') return 'bg-red-600 text-white';
+    if (level === 'MEDIUM') return 'bg-orange-500 text-white';
+    return 'bg-blue-600 text-white';
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans px-6 pb-20">
-      {/* Navigation */}
       <nav className="max-w-6xl mx-auto py-6 flex justify-between items-center border-b border-slate-800">
         <div className="text-xl font-bold flex items-center gap-2">
-          <ShieldCheck className="text-blue-500" /> Truthifier
-        </div>
-        <div className="flex gap-6 text-sm text-slate-400">
-          <a href="#mission" className="hover:text-white transition">Mission</a>
-          <a href="#solution" className="hover:text-white transition">Solution</a>
+          <ShieldCheck className="text-blue-500" /> VerifyAI
         </div>
       </nav>
 
-      {/* Hero Section & Mission */}
       <main className="max-w-4xl mx-auto pt-20 text-center">
-        <section id="mission" className="mb-16">
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">
-            Our Mission: <span className="text-blue-500 text-glow">Zero-Defect AI.</span>
-          </h1>
-          <p className="text-slate-400 text-xl max-w-2xl mx-auto leading-relaxed">
-            We believe enterprise AI should be as reliable as a bank ledger. VerifyAI was built to 
-            bridge the gap between LLM creativity and institutional accuracy.
+        <section className="mb-16">
+          <h1 className="text-5xl font-extrabold mb-6 tracking-tight">Zero-Defect Enterprise AI.</h1>
+          <p className="text-slate-400 text-xl max-w-2xl mx-auto">
+            Our mission is to eliminate AI hallucinations by verifying LLM outputs against your institutional "Truth Source".
           </p>
         </section>
 
-        {/* Solution Grid */}
-        <section id="solution" className="grid md:grid-cols-2 gap-8 mb-20 text-left">
-          <div className="p-8 bg-slate-900/50 border border-slate-800 rounded-2xl">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <ShieldCheck className="text-blue-400" /> The Problem
-            </h3>
-            <p className="text-slate-400 text-sm">
-              Standard LLMs are trained on the open web. When they handle your private customer support, 
-              they often "hallucinate" promises, discounts, and policies that don't exist in your actual SOPs.
-            </p>
-          </div>
-          <div className="p-8 bg-blue-600/10 border border-blue-500/20 rounded-2xl">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <CheckCircle2 className="text-blue-400" /> Our Solution
-            </h3>
-            <p className="text-slate-400 text-sm">
-              We provide a **Contextual Audit**. By comparing your chat logs against your specific 
-              documentation (Truth Source), we pinpoint exactly where your AI drifted from the facts.
-            </p>
-          </div>
-        </section>
-
-        {/* Truth Source Input */}
-        <div className="mb-8 text-left max-w-2xl mx-auto">
-          <label className="flex items-center gap-2 text-sm font-semibold mb-2 text-blue-400">
-            <BookOpen size={16} /> Step 1: Add Truth Source (Your Documentation)
-          </label>
-          <textarea 
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm focus:border-blue-500 outline-none transition h-32"
-            placeholder="Paste your company policies or product specs here. We'll use this to verify the logs."
-            value={truthSource}
-            onChange={(e) => setTruthSource(e.target.value)}
-          />
-        </div>
-
-        {/* Audit Tool */}
-        {!results ? (
-          <div className="max-w-2xl mx-auto">
-            <label className="flex items-center gap-2 text-sm font-semibold mb-2 text-blue-400 text-left">
-              <FileText size={16} /> Step 2: Upload AI Logs
+        <div className="max-w-2xl mx-auto text-left space-y-6">
+          <div>
+            <label className="text-sm font-semibold mb-2 block text-blue-400 flex items-center gap-2">
+              <BookOpen size={16} /> 1. Paste Truth Source (Policies/SOPs)
             </label>
-            <div className={`bg-slate-900 border-2 border-dashed rounded-2xl p-12 transition group cursor-pointer ${loading ? 'border-blue-500/50 opacity-50' : 'border-slate-700 hover:border-blue-500/50'}`}>
-              <input type="file" className="hidden" id="log-upload" onChange={handleUpload} accept=".json" />
-              <label htmlFor="log-upload" className="cursor-pointer">
-                {loading ? <Loader2 className="w-12 h-12 mx-auto animate-spin text-blue-500" /> : (
-                  <>
-                    <UploadCloud className="w-12 h-12 mx-auto mb-4 text-slate-500 group-hover:text-blue-500" />
-                    <h3 className="text-xl font-semibold mb-4">Run Free Audit</h3>
-                    <div className="bg-blue-600 px-8 py-3 rounded-full font-bold inline-flex items-center gap-2">
-                      Analyze Log Integrity <ChevronRight size={18} />
-                    </div>
-                  </>
-                )}
+            <textarea 
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm focus:border-blue-500 outline-none h-32"
+              placeholder="Paste your policies here..."
+              value={truthSource}
+              onChange={(e) => setTruthSource(e.target.value)}
+            />
+          </div>
+
+          {!results ? (
+            <div>
+              <label className="text-sm font-semibold mb-2 block text-blue-400 flex items-center gap-2">
+                <FileText size={16} /> 2. Upload AI Logs
               </label>
+              <div className="bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl p-12 text-center hover:border-blue-500/50 transition cursor-pointer">
+                <input type="file" className="hidden" id="log-upload" onChange={handleUpload} accept=".json" />
+                <label htmlFor="log-upload" className="cursor-pointer">
+                  {loading ? <Loader2 className="animate-spin mx-auto text-blue-500" size={40} /> : (
+                    <>
+                      <UploadCloud className="mx-auto mb-4 text-slate-500" size={40} />
+                      <div className="bg-blue-600 px-8 py-3 rounded-full font-bold inline-flex items-center gap-2">
+                        Start Compliance Audit <ChevronRight size={18} />
+                      </div>
+                    </>
+                  )}
+                </label>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="mt-10 p-8 bg-slate-900 border border-slate-800 rounded-2xl text-left animate-in fade-in zoom-in">
-             <div className="flex justify-between items-start mb-8 border-b border-slate-800 pb-6">
-                <div>
-                  <h2 className="text-3xl font-bold">Audit Score: <span className="text-blue-500">{results.score}%</span></h2>
-                  <p className="text-slate-400">Based on provided Truth Source documentation.</p>
-                </div>
-                {/* Download Button */}
-                <button 
-                  onClick={() => window.print()} 
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm transition"
-                >
-                  <Download size={16} /> Download PDF Report
-                </button>
-             </div>
-             {/* Results List */}
-             <div className="space-y-4">
-                {results.detailedResults?.map((res: any, i: number) => (
-                  <div key={i} className="p-4 bg-slate-800/30 rounded-lg border border-slate-700 flex justify-between items-center">
-                    <span className="text-sm">{res.reason}</span>
-                    <span className={`text-[10px] px-2 py-1 rounded font-bold ${res.status === 'FLAGGED' ? 'bg-red-500' : 'bg-green-500'}`}>
-                      {res.status}
-                    </span>
+          ) : (
+            <div className="p-8 bg-slate-900 border border-slate-800 rounded-2xl animate-in fade-in zoom-in">
+               <div className="flex justify-between items-start mb-6 border-b border-slate-800 pb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold">Audit Score: <span className="text-blue-500">{results.score}%</span></h2>
+                    <p className="text-slate-400 text-xs">Analysis complete based on institutional constraints.</p>
                   </div>
-                ))}
-             </div>
-          </div>
-        )}
+                  <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg text-xs">
+                    <Download size={14} /> Export PDF Report
+                  </button>
+               </div>
+               <div className="space-y-3">
+                  {results.detailedResults?.map((res: any, i: number) => (
+                    <div key={i} className={`p-4 rounded border flex justify-between items-center text-sm ${res.status === 'FLAGGED' ? 'bg-red-500/5 border-red-500/20' : 'bg-slate-800/50 border-slate-700'}`}>
+                      <div className="flex items-center gap-3">
+                        {res.status === 'FLAGGED' ? <AlertTriangle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-green-500" />}
+                        <span>{res.reason}</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${getRiskColor(res.riskLevel)}`}>
+                        {res.riskLevel || res.status}
+                      </span>
+                    </div>
+                  ))}
+               </div>
+               <button onClick={() => setResults(null)} className="mt-6 text-slate-500 text-xs underline w-full text-center">New Audit</button>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
