@@ -36,7 +36,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="max-w-6xl mx-auto py-6 flex justify-between items-center border-b border-slate-800">
         <div className="text-xl font-bold flex items-center gap-2">
-          <ShieldCheck className="text-blue-500" /> VerifyAI
+          <ShieldCheck className="text-blue-500" /> Truthifier
         </div>
         <div className="flex gap-6 text-sm text-slate-400">
           <a href="#mission" className="hover:text-white transition">Mission</a>
