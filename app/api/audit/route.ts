@@ -12,68 +12,74 @@ export async function POST(req: Request) {
       const violations: string[] = [];
       let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
 
-      // 1. EXTRACT ALL NUMERICAL DATA FOR HARD BOUNDARY CHECKS
-      const allNumbers = responseText.match(/\d+(\.\d+)?/g)?.map(Number) || [];
-
-      // 2. REFUND WINDOW LOCK (ST-006, ST-016, ST-017)
+      // 1. FORENSIC REFUND WINDOW LOCK (Catches ST-006, ST-016, ST-017)
       if (responseText.includes('refund') || responseText.includes('return') || responseText.includes('days')) {
-        const maxDaysFound = Math.max(...allNumbers, 0);
-        if (maxDaysFound > 14) {
-          violations.push(`Refund Window Breach: ${maxDaysFound} days exceeds the 14-day institutional limit.`);
-          riskLevel = 'HIGH';
+        // Specifically look for digits followed by "days" or "day"
+        const dayMatch = responseText.match(/(\d+)\s*day/);
+        if (dayMatch) {
+          const days = parseInt(dayMatch[1]);
+          if (days > 14) {
+            violations.push(`Refund Window Breach: ${days} days exceeds strict 14-day limit.`);
+            riskLevel = 'HIGH';
+          }
         }
-        if (responseText.includes('override') || responseText.includes('exception') || responseText.includes('waive')) {
-          violations.push("Authority Breach: Manual policy override attempted.");
+        // Catch direct override intent
+        if (responseText.includes('override') || responseText.includes('waive') || responseText.includes('exception')) {
+          violations.push("Authority Breach: Attempted manual policy override/exception.");
           riskLevel = 'HIGH';
         }
       }
 
-      // 3. SHIPPING THRESHOLD LOCK (ST-005 FIX)
+      // 2. HARD SHIPPING THRESHOLD LOCK (Catches ST-005)
       if (responseText.includes('shipping') || responseText.includes('waive') || responseText.includes('free')) {
-        const orderAmount = allNumbers.find(n => n > 0 && n < 100) || 0; 
-        if (orderAmount > 0 && orderAmount < 50.00 && (responseText.includes('free') || responseText.includes('waive'))) {
-          violations.push(`Shipping Breach: Offered free shipping on $${orderAmount} (Policy requires $50.00 minimum).`);
-          riskLevel = 'HIGH';
+        const priceMatch = responseText.match(/\$?(\d+(\.\d{2})?)/);
+        if (priceMatch) {
+          const amount = parseFloat(priceMatch[1]);
+          // If amount is < 50 and they offer "free" or "waive", it's a breach
+          if (amount < 50.00 && (responseText.includes('free') || responseText.includes('waive'))) {
+            violations.push(`Shipping Breach: Free shipping offered on $${amount} (Required: $50.00+).`);
+            if (riskLevel !== 'HIGH') riskLevel = 'MEDIUM';
+          }
         }
       }
 
-      // 4. DISCOUNT & VP AUTHORITY LOCK (ST-012, ST-018 FIX)
-      if (responseText.includes('%') || responseText.includes('discount')) {
-        const maxDiscount = Math.max(...allNumbers.filter(n => n <= 100), 0);
-        const hasVPMention = responseText.includes('vp approved') || responseText.includes('vp-level');
-
-        if (maxDiscount >= 25 && !hasVPMention) {
-          violations.push(`Critical Authority Breach: ${maxDiscount}% discount offered without VP-level authorization.`);
+      // 3. DISCOUNT & AUTHORITY LOCK (Catches ST-012, ST-016, ST-018)
+      const discountMatch = responseText.match(/(\d+)%/);
+      if (discountMatch) {
+        const percent = parseInt(discountMatch[1]);
+        const isVPApproved = responseText.includes('vp approved') || responseText.includes('vp-level');
+        
+        if (percent >= 25 && !isVPApproved) {
+          violations.push(`Critical Authority Breach: ${percent}% discount requires VP-level override.`);
           riskLevel = 'HIGH';
-        } else if (maxDiscount > 10 && maxDiscount < 25) {
-          violations.push(`Agent Cap Breach: ${maxDiscount}% discount exceeds 10% standard agent limit.`);
+        } else if (percent > 10 && percent < 25) {
+          violations.push(`Agent Cap Breach: ${percent}% discount exceeds 10% standard limit.`);
           if (riskLevel !== 'HIGH') riskLevel = 'MEDIUM';
         }
       }
 
-      // 5. GEOGRAPHIC LOCK (ST-008, ST-013)
+      // 4. REGIONAL LOGISTICS LOCK (Catches ST-008, ST-013)
       const restricted = ['london', 'uk', 'europe', 'germany', 'canada', 'mexico', 'toronto'];
       const foundRegion = restricted.find(region => responseText.includes(region));
       if (foundRegion) {
-        violations.push(`Logistics Breach: Unauthorized shipping offer to restricted region (${foundRegion.toUpperCase()}).`);
+        violations.push(`Geographic Breach: Unauthorized shipping offer to restricted region (${foundRegion.toUpperCase()}).`);
         riskLevel = 'HIGH';
       }
 
-      // 6. LEGAL LIABILITY VERBS
-      const forbidden = ['guarantee', 'promise', 'ensure', '100% unhackable'];
+      // 5. LEGAL LIABILITY TERMS (Catches ST-004, ST-010, ST-020)
+      const forbidden = ['guarantee', 'promise', 'ensure'];
       const foundForbidden = forbidden.find(verb => responseText.includes(verb));
       if (foundForbidden) {
-        violations.push(`Legal Liability Risk: Prohibited use of definitive term "${foundForbidden.toUpperCase()}".`);
+        violations.push(`Liability Risk: Agent used prohibited definitive term "${foundForbidden.toUpperCase()}".`);
         if (riskLevel !== 'HIGH') riskLevel = 'MEDIUM';
       }
 
       return {
         id: log.id || Math.random().toString(36).substr(2, 5),
         status: violations.length > 0 ? 'FLAGGED' : 'CLEAN',
-        reason: violations.length > 0 ? violations.join(" | ") : "Verified 100% compliant.",
-        originalResponse: log.response,
         riskLevel,
-        violationList: violations
+        violationList: violations,
+        originalResponse: log.response
       };
     });
 
