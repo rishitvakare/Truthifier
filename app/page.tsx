@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   ShieldCheck, AlertTriangle, UploadCloud, ChevronRight, 
   Loader2, CheckCircle2, XCircle, FileText, Download, 
-  Zap, ArrowRight, Printer 
+  Zap, ArrowRight, Printer, TrendingDown, DollarSign, Activity
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -46,29 +46,29 @@ export default function LandingPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto pt-12 pb-32 px-6">
-        {/* Mission, Problem, Solution - preserved for business context */}
+        {/* REVENUE PROTECTION HOOK */}
         {!results && (
           <section id="mission" className="mb-24 text-center animate-in fade-in duration-1000">
             <div className="inline-block px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/5 text-emerald-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-6">
-              Enterprise Integrity Protocol
+              Institutional Shield v1.0
             </div>
-            <h1 className="text-6xl md:text-7xl font-black text-white mb-8 tracking-tighter italic">
-              AI Truth <span className="text-emerald-500">Protocol.</span>
+            <h1 className="text-6xl md:text-7xl font-black text-white mb-8 tracking-tighter italic leading-[0.9]">
+              Is Your AI Promising What Your <span className="text-emerald-500">Policy Prohibits?</span>
             </h1>
-            <p className="text-slate-500 text-xl max-w-2xl mx-auto leading-relaxed mb-12">
-              <span className="text-white font-bold underline decoration-red-500/50">The Problem:</span> Generative AI prioritizes "helpfulness" over accuracy, leading to unauthorized promises and massive legal liability.
+            <p className="text-slate-500 text-lg max-w-3xl mx-auto leading-relaxed mb-12 italic border-l-2 border-emerald-500/30 pl-8 py-2">
+              "Every 'helpful' AI response carries a hidden price tag. When an agent extends a refund window or waives a shipping fee, it isn’t just being polite—it’s creating <span className="text-white font-bold underline decoration-red-500/50 text-xl font-black italic">unvetted financial liability.</span> Truthifier intercepts the drift, cross-verifying every numerical promise against your institutional constraints in real-time."
             </p>
             
             <div className="grid md:grid-cols-2 gap-6 text-left max-w-4xl mx-auto">
-              <div className="p-8 rounded-2xl bg-[#0A0A0A] border border-white/5">
+              <div className="p-8 rounded-2xl bg-[#0A0A0A] border border-white/5 shadow-2xl">
                 <h3 className="text-white font-bold mb-3 flex items-center gap-2 uppercase tracking-widest text-xs">
-                  <ShieldCheck className="text-emerald-500" size={18} /> Our Solution
+                  <ShieldCheck className="text-emerald-500" size={18} /> Forensic Solution
                 </h3>
                 <p className="text-sm text-slate-500 leading-relaxed">
                   Truthifier provides a forensic verification layer. We cross-reference every claim against your institutional "Truth Source" to ensure 100% policy compliance.
                 </p>
               </div>
-              <div className="p-8 rounded-2xl bg-[#0A0A0A] border border-white/5">
+              <div className="p-8 rounded-2xl bg-[#0A0A0A] border border-white/5 shadow-2xl">
                 <h3 className="text-white font-bold mb-3 flex items-center gap-2 italic uppercase tracking-widest text-xs">
                   <Zap className="text-emerald-500" size={18} /> The Mission
                 </h3>
@@ -118,12 +118,37 @@ export default function LandingPage() {
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  {/* Results Header */}
+                  
+                  {/* EXECUTIVE SUMMARY TILES */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+                    <div className="bg-black border border-white/5 p-6 rounded-2xl shadow-xl">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Liability Found</p>
+                      <div className="flex items-center gap-2 text-white font-black text-2xl italic">
+                        <DollarSign className="text-red-500" size={20} />
+                        {(results.issues * 120).toLocaleString()} <span className="text-[10px] text-slate-600 ml-1">EST. USD</span>
+                      </div>
+                    </div>
+                    <div className="bg-black border border-white/5 p-6 rounded-2xl shadow-xl">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Institutional Drift Rate</p>
+                      <div className="flex items-center gap-2 text-white font-black text-2xl italic">
+                        <TrendingDown className="text-emerald-500" size={20} />
+                        {Math.round((results.issues / results.detailedResults.length) * 100)}%
+                      </div>
+                    </div>
+                    <div className="bg-black border border-white/5 p-6 rounded-2xl shadow-xl">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Audit Score</p>
+                      <div className="flex items-center gap-2 text-emerald-500 font-black text-2xl italic">
+                        <Activity size={20} />
+                        {results.score}%
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 border-b border-white/5 pb-8">
                     <div>
-                      <h2 className="text-4xl font-black text-white italic tracking-tighter">INTEGRITY: {results.score}%</h2>
+                      <h2 className="text-xl font-black text-white italic tracking-tighter">FORENSIC SWEEP COMPLETE</h2>
                       <p className="text-emerald-500 font-mono text-[10px] uppercase tracking-widest mt-2 tracking-[0.2em]">
-                        {results.issues} Policy Breaches Identified // Forensic Sweep Complete
+                        {results.issues} Policy Breaches Identified against Institutional Logic
                       </p>
                     </div>
                     <div className="flex gap-4 mt-4 md:mt-0">
@@ -134,12 +159,12 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  {/* Enhanced Comparison Rows supporting multi-violation display */}
+                  {/* Enhanced Comparison Rows */}
                   <div className="space-y-4 mb-12">
                     {results.detailedResults?.map((res: any, i: number) => (
                       <div key={i} className={`bg-black border rounded-xl overflow-hidden transition ${res.status === 'FLAGGED' ? 'border-red-500/20 shadow-lg shadow-red-500/5' : 'border-white/5'}`}>
                         <div className="px-6 py-2 bg-white/5 flex justify-between items-center border-b border-white/5">
-                          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-bold">LOG_ENTRY_{res.id}</span>
+                          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-bold tracking-[0.2em]">ENTRY_LOG_ID_{res.id}</span>
                           <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border ${res.riskLevel === 'HIGH' ? 'text-red-500 border-red-500/20 bg-red-500/5' : 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5'}`}>
                             {res.riskLevel || res.status}
                           </span>
@@ -150,7 +175,7 @@ export default function LandingPage() {
                             <p className="text-xs text-slate-400 italic leading-relaxed">"{res.originalResponse}"</p>
                           </div>
                           <div className="border-l border-white/5 pl-8">
-                            <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest mb-3">Forensic Correction</p>
+                            <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest mb-3">Institutional Correction</p>
                             <ul className="space-y-3">
                               {res.violationList && res.violationList.length > 0 ? (
                                 res.violationList.map((v: string, idx: number) => (
@@ -161,7 +186,7 @@ export default function LandingPage() {
                                 ))
                               ) : (
                                 <li className="text-xs text-slate-500 italic flex items-center gap-2">
-                                  <CheckCircle2 size={12} className="text-emerald-500" /> Verified compliant.
+                                  <CheckCircle2 size={12} className="text-emerald-500" /> Verified 100% Compliant.
                                 </li>
                               )}
                             </ul>
@@ -171,18 +196,21 @@ export default function LandingPage() {
                     ))}
                   </div>
 
-                  {/* Lead Capture - specifically for score failures */}
+                  {/* HIGH-CONVERTING LEAD CAPTURE */}
                   {results.score < 100 && (
-                    <div className="p-8 rounded-3xl bg-emerald-500/5 border border-emerald-500/20 text-center print:hidden">
-                      <h4 className="text-white font-black text-xl italic tracking-tighter mb-2">Request Mitigation Strategy</h4>
-                      <p className="text-xs text-slate-500 mb-6">Critical liability detected. Submit your credentials for a detailed forensic breakdown.</p>
-                      <div className="flex gap-2 max-w-sm mx-auto">
+                    <div className="p-10 rounded-[2.5rem] bg-emerald-500/5 border border-emerald-500/20 text-center print:hidden shadow-3xl">
+                      <div className="mb-4 inline-block p-4 rounded-full bg-emerald-500/10 text-emerald-500">
+                        <ShieldCheck size={32} />
+                      </div>
+                      <h4 className="text-white font-black text-2xl italic tracking-tighter mb-2 italic">Request Full Forensic Mitigation Roadmap</h4>
+                      <p className="text-sm text-slate-500 mb-8 max-w-sm mx-auto">Critical liability found in AI agent interactions. Submit your corporate email to receive a detailed exposure analysis and recovery plan.</p>
+                      <div className="flex flex-col md:flex-row gap-3 max-w-md mx-auto">
                         <input 
                           type="email" 
                           placeholder="security@enterprise.com" 
-                          className="bg-black border border-emerald-500/20 rounded-xl px-4 py-3 text-xs flex-1 outline-none text-emerald-500 focus:border-emerald-500 transition"
+                          className="bg-black border border-white/10 rounded-2xl px-6 py-4 text-sm flex-1 outline-none text-emerald-500 focus:border-emerald-500 transition shadow-inner"
                         />
-                        <button className="bg-emerald-600 hover:bg-emerald-500 text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-tighter transition shadow-lg shadow-emerald-500/10">Secure</button>
+                        <button className="bg-emerald-600 hover:bg-emerald-500 text-black px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition transform hover:scale-105 shadow-xl shadow-emerald-500/20">Secure Analysis</button>
                       </div>
                     </div>
                   )}
