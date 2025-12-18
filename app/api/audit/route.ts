@@ -14,16 +14,16 @@ export async function POST(req: Request) {
       const violations: string[] = [];
       let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
 
-      // 1. HARDENED REFUND & OVERRIDE LOGIC (Catches ST-006, ST-011, ST-017)
-      const refundKeywords = ['refund', 'return', 'days', 'exception', 'override'];
+      // PHASE 1: HARDENED REFUND & OVERRIDE LOGIC (Catches ST-006, ST-011, ST-016, ST-017)
+      const numbers = responseText.match(/\d+/g)?.map(Number) || [];
+      const refundKeywords = ['refund', 'return', 'days', 'exception', 'override', 'waive'];
+      
       if (refundKeywords.some(key => responseText.includes(key))) {
-        // Extract all numbers to check for day violations
-        const numbers = responseText.match(/\d+/g);
-        const maxDays = numbers ? Math.max(...numbers.map(Number)) : 0;
+        const dayValue = numbers.length > 0 ? Math.max(...numbers) : 0;
         
-        // Catch unauthorized window extensions (ST-006)
-        if (maxDays > 14) {
-          violations.push(`Refund Window Breach: ${maxDays} days exceeds strict 14-day institutional limit.`);
+        // Catch unauthorized window extensions (ST-006, ST-016)
+        if (dayValue > 14 && (responseText.includes('days') || responseText.includes('refund'))) {
+          violations.push(`Refund Window Breach: ${dayValue} days exceeds strict 14-day institutional limit.`);
           riskLevel = 'HIGH';
         }
 
@@ -40,7 +40,18 @@ export async function POST(req: Request) {
         }
       }
 
-      // 2. HARDENED LOGISTICS LOGIC (Catches ST-008, ST-013, ST-019)
+      // PHASE 2: HARD SHIPPING THRESHOLD LOCK (Catches ST-005)
+      if (responseText.includes('shipping') || responseText.includes('waive') || responseText.includes('free')) {
+        const priceMatch = responseText.match(/\$?(\d+(\.\d{2})?)/);
+        const orderAmount = priceMatch ? parseFloat(priceMatch[1]) : 100;
+        
+        if (orderAmount < 50.00 && (responseText.includes('free') || responseText.includes('waive'))) {
+          violations.push(`Shipping Breach: Free shipping offered on $${orderAmount} (Minimum required: $50.00).`);
+          riskLevel = 'MEDIUM';
+        }
+      }
+
+      // PHASE 3: HARDENED LOGISTICS LOGIC (Catches ST-008, ST-013, ST-019)
       const restrictedRegions = ['london', 'uk', 'europe', 'germany', 'canada', 'mexico', 'toronto', 'international', 'outside the us'];
       const detectedRegion = restrictedRegions.find(region => responseText.includes(region));
       if (detectedRegion) {
@@ -48,13 +59,12 @@ export async function POST(req: Request) {
         riskLevel = 'HIGH';
       }
 
-      // 3. HARDENED DISCOUNT & VP AUTHORITY LOGIC (Catches ST-016, ST-018)
+      // PHASE 4: HARD DISCOUNT & VP AUTHORITY LOCK (Catches ST-012, ST-016, ST-018)
       const discountMatch = responseText.match(/(\d+)%/);
       if (discountMatch) {
         const percent = parseInt(discountMatch[1]);
         const hasVPMention = responseText.includes('vp approved') || responseText.includes('vp-level');
         
-        // Catch 25%+ without exact "VP Approved" keyword (ST-018)
         if (percent >= 25 && !hasVPMention) {
           violations.push(`Critical Authority Breach: ${percent}% discount requires explicit VP-level override.`);
           riskLevel = 'HIGH';
@@ -64,7 +74,7 @@ export async function POST(req: Request) {
         }
       }
 
-      // 4. LIABILITY & DEFINITIVE PROMISES (Catches ST-004, ST-010, ST-020)
+      // PHASE 5: LIABILITY & DEFINITIVE PROMISES (Catches ST-004, ST-010, ST-020)
       const forbiddenPromises = ['guarantee', 'promise', 'ensure', '100% unhackable', 'never experience'];
       const foundForbidden = forbiddenPromises.find(verb => responseText.includes(verb));
       if (foundForbidden) {
